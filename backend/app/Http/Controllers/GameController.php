@@ -30,6 +30,7 @@ class GameController extends Controller
             'platform' => ['nullable', 'string', 'max:60'],
             'min_price' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'max_price' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', 'gte:min_price'],
+            'min_discount' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sort' => ['nullable', 'string', 'in:price_asc,price_desc,discount,newest'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
             
@@ -70,6 +71,15 @@ class GameController extends Controller
             $query->whereHas('prices', function ($q) use ($validated) {
                 $q->when(array_key_exists('min_price', $validated), fn ($q) => $q->where('current_price', '>=', $validated['min_price']))
                     ->when(array_key_exists('max_price', $validated), fn ($q) => $q->where('current_price', '<=', $validated['max_price']));
+            });
+        }
+
+        // --- filter minimal diskon (mis. 50 = hanya game dengan diskon >= 50%) ---
+        if (! empty($validated['min_discount'])) {
+            $minDiscount = $validated['min_discount'];
+            $query->whereHas('prices', function ($q) use ($minDiscount) {
+                $q->where('is_discounted', true)
+                    ->where('discount_percentage', '>=', $minDiscount);
             });
         }
 
